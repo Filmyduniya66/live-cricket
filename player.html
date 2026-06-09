@@ -1,51 +1,89 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Player</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.10.0/video-js.min.css" rel="stylesheet" />
+    <title>Stream Player</title>
+    <!-- Clappr Player Script -->
+    <script src="https://cdn.jsdelivr.net/npm/@clappr/player@0.12.1/dist/clappr.min.js"></script>
+    <!-- HLS Playback Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/clappr-hlsjs-playback@0.4.1/dist/clappr-hlsjs-playback.min.js"></script>
+    
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
-        .video-js { width: 100% !important; height: 100vh !important; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+        }
+        #player {
+            width: 100%;
+            height: 100%;
+        }
     </style>
+    
+    <script>
+        // Anti-Clickjack Security
+        if (window.top !== window.self) {
+            window.top.location = window.self.location;
+        }
+
+        // Developer Tools/Console Blocker
+        setInterval(function() {
+            var start = +new Date();
+            debugger;
+            var end = +new Date();
+            if (end - start > 100) {
+                document.body.innerHTML = "Access Denied";
+            }
+        }, 100);
+    </script>
 </head>
 <body>
 
-    <video id="live-player" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto"></video>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.10.0/video.min.js"></script>
+    <div id="player"></div>
 
     <script>
-        // URL से ?id= वैल्यू निकालने के लिए फ़ंक्शन
+        // URL से ?id= निकालने का फ़ंक्शन
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
         }
 
         const streamId = getQueryParam('id');
-        const player = videojs('live-player');
 
         if (streamId) {
-            // URL को ठीक किया गया है (अगर आप डायनामिक ID डालना चाहते हैं तो इस URL को बदल सकते हैं)
-            let streamUrl = "https://dai.google.com/ssai/event/baS0o0i_QLiYmhye6b6_FQ/master.m3u8"; 
-            
-            // HLS (.m3u8) के लिए सही MIME Type
-            let streamType = "application/x-mpegURL"; 
+            // नोट: यह प्लेयर Google Drive की प्रॉक्सी ID का इस्तेमाल करके वीडियो लोड करता है
+            const videoUrl = `https://free-proxy.teleratb0ts.workers.dev/stream?id=${streamId}`;
 
-            player.src({ src: streamUrl, type: streamType });
-            
-            // ब्राउज़र की Autoplay पॉलिसी के कारण म्यूट करके प्ले करना सुरक्षित रहता है
-            player.ready(function() {
-                player.muted(true); // पहले म्यूट करें ताकि ऑटोप्ले ब्लॉक न हो
-                player.play().catch(error => {
-                    console.log("Autoplay ब्लॉक हुआ, यूज़र को प्ले बटन दबाना होगा:", error);
-                });
+            // Clappr Player कॉन्फ़िगरेशन
+            var player = new Clappr.Player({
+                source: videoUrl,
+                parentId: "#player",
+                plugins: [ClapprHlsjsPlayback],
+                mimeType: "application/x-mpegURL", // HLS (.m3u8) के लिए
+                autoPlay: true,
+                height: "100%",
+                width: "100%",
+                preload: "auto",
+                chromecast: {
+                    appId: "9DFB77C0",
+                    contentType: "video/mp4"
+                },
+                playback: {
+                    hlsjsConfig: {
+                        maxBufferSize: 0,
+                        maxBufferLength: 10,
+                        liveSyncDurationCount: 3
+                    }
+                }
             });
-
         } else {
-            alert("Error: Video ID missing है! URL में ?id=something जोड़ें।");
+            document.getElementById('player').innerHTML = "<div style='color:white; text-align:center; padding-top:20%; font-family:sans-serif;'>Error: Stream ID is missing!</div>";
         }
     </script>
+
 </body>
 </html>
