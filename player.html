@@ -15,11 +15,9 @@
     <video id="live-player" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto"></video>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.10.0/video.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dashjs/4.7.4/dash.all.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-dash/5.1.1/videojs-contrib-dash.min.js"></script>
 
     <script>
-        // URL se ?id= value nikalne ke liye function
+        // URL से ?id= वैल्यू निकालने के लिए फ़ंक्शन
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
@@ -29,17 +27,24 @@
         const player = videojs('live-player');
 
         if (streamId) {
-            // NOTE: Yahan apne streaming server ka base URL dalein jo ID ko accept kare.
-            // Example ke liye agar aapka main source kisi server pe hai:
-            let streamUrl = "https://yourserver.com/live/" + streamId + "https://sonydaimenew.akamaized.net/hls/live/2037142/cricodi0906/ENG/std_lrh-800300010.m3u8?hdnea=exp=1781019854~acl=/*~id=91241173209101006577261130083446~hmac=b033ce4897344435258868072d265643f9d276fb04a416d0c055e726272cbf1c"; 
-            let streamType = "application/x-mpegURL"; // M3U8 ke liye
-
-            // Agar MPD chalana hai toh type ko "application/dash+xml" aur extension .mpd karein
+            // URL को ठीक किया गया है (अगर आप डायनामिक ID डालना चाहते हैं तो इस URL को बदल सकते हैं)
+            let streamUrl = "https://sonydaimenew.akamaized.net/hls/live/2037142/cricodi0906/ENG/std_lrh-800300010.m3u8?hdnea=exp=1781019854~acl=/*~id=91241173209101006577261130083446~hmac=b033ce4897344435258868072d265643f9d276fb04a416d0c055e726272cbf1c"; 
+            
+            // HLS (.m3u8) के लिए सही MIME Type
+            let streamType = "application/x-mpegURL"; 
 
             player.src({ src: streamUrl, type: streamType });
-            player.play().catch(error => console.log("Autoplay block hua:", error));
+            
+            // ब्राउज़र की Autoplay पॉलिसी के कारण म्यूट करके प्ले करना सुरक्षित रहता है
+            player.ready(function() {
+                player.muted(true); // पहले म्यूट करें ताकि ऑटोप्ले ब्लॉक न हो
+                player.play().catch(error => {
+                    console.log("Autoplay ब्लॉक हुआ, यूज़र को प्ले बटन दबाना होगा:", error);
+                });
+            });
+
         } else {
-            alert("Error: Video ID missing hai!");
+            alert("Error: Video ID missing है! URL में ?id=something जोड़ें।");
         }
     </script>
 </body>
