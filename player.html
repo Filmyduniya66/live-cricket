@@ -3,87 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Player</title>
-    <!-- Clappr Player Script -->
-    <script src="https://cdn.jsdelivr.net/npm/@clappr/player@0.12.1/dist/clappr.min.js"></script>
-    <!-- HLS Playback Plugin -->
-    <script src="https://cdn.jsdelivr.net/npm/clappr-hlsjs-playback@0.4.1/dist/clappr-hlsjs-playback.min.js"></script>
+    <title>Universal Premium Stream Player</title>
     
+    <!-- Video.js CSS -->
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <!-- City Theme for Premium Premium Look -->
+    <link href="https://unpkg.com/@videojs/themes@1.0.1/city/index.css" rel="stylesheet">
+
     <style>
-        body, html {
+        body {
+            background-color: #0b0f19;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            overflow: hidden;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        #player {
+        .container {
             width: 100%;
-            height: 100%;
+            max-width: 800px;
+        }
+        h2 {
+            text-align: center;
+            color: #00ffcc;
+        }
+        .player-wrapper {
+            background: #111827;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid #1f2937;
+        }
+        .video-js {
+            width: 100%;
+            height: 450px;
+            border-radius: 8px;
+        }
+        .input-box {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #111827;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        input, button {
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #374151;
+            font-size: 15px;
+        }
+        input {
+            background: #1f2937;
+            color: white;
+            outline: none;
+        }
+        input:focus {
+            border-color: #00ffcc;
+        }
+        button {
+            background: #00ffcc;
+            color: #0b0f19;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            border: none;
+        }
+        button:hover {
+            background: #00ccaa;
+            transform: scale(1.01);
         }
     </style>
-    
-    <script>
-        // Anti-Clickjack Security
-        if (window.top !== window.self) {
-            window.top.location = window.self.location;
-        }
-
-        // Developer Tools/Console Blocker
-        setInterval(function() {
-            var start = +new Date();
-            debugger;
-            var end = +new Date();
-            if (end - start > 100) {
-                document.body.innerHTML = "Access Denied";
-            }
-        }, 100);
-    </script>
 </head>
 <body>
 
-    <div id="player"></div>
+<div class="container">
+    <h2>Universal M3U8 & MPD Player</h2>
+    
+    <div class="player-wrapper">
+        <video id="my-video" class="video-js vjs-theme-city" controls preload="auto" width="800" height="450"></video>
+    </div>
 
-    <script>
-        // URL से ?id= निकालने का फ़ंक्शन
-        function getQueryParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
+    <!-- URL Badalne ka Option -->
+    <div class="input-box">
+        <input type="text" id="stream-url" placeholder="Apna .m3u8 ya .mpd link yahan dalein..." value="">
+        <button onclick="loadStream()">Play Stream</button>
+    </div>
+</div>
+
+<!-- Video.js Core Scripts -->
+<script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+<!-- DASH (.mpd) support plugin -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-dash/5.1.1/videojs-contrib-dash.min.js"></script>
+<!-- EME (DRM & Token Header Support) plugin -->
+<script src="https://cdn.jsdelivr.net/npm/videojs-contrib-eme@5.2.0/dist/videojs-contrib-eme.min.js"></script>
+
+<script>
+    // Player Initialize karein
+    var player = videojs('my-video', {
+        fluid: true,
+        playbackRates: [0.5, 1, 1.5, 2],
+        userActions: { hotkeys: true }
+    });
+    
+    player.eme(); // EME encryption/headers initialize karein
+
+    function loadStream() {
+        var url = document.getElementById('stream-url').value.trim();
+        if (!url) {
+            alert("Kripya valid URL dalein!");
+            return;
         }
 
-        const streamId = getQueryParam('id');
-
-        if (streamId) {
-            // नोट: यह प्लेयर Google Drive की प्रॉक्सी ID का इस्तेमाल करके वीडियो लोड करता है
-            const videoUrl = `https://free-proxy.teleratb0ts.workers.dev/stream?id=${streamId}`;
-
-            // Clappr Player कॉन्फ़िगरेशन
-            var player = new Clappr.Player({
-                source: videoUrl,
-                parentId: "#player",
-                plugins: [ClapprHlsjsPlayback],
-                mimeType: "application/x-mpegURL", // HLS (.m3u8) के लिए
-                autoPlay: true,
-                height: "100%",
-                width: "100%",
-                preload: "auto",
-                chromecast: {
-                    appId: "9DFB77C0",
-                    contentType: "video/mp4"
-                },
-                playback: {
-                    hlsjsConfig: {
-                        maxBufferSize: 0,
-                        maxBufferLength: 10,
-                        liveSyncDurationCount: 3
-                    }
-                }
-            });
+        var type = "";
+        
+        // Auto-Detecting M3U8 or MPD
+        if (url.includes(".m3u8")) {
+            type = "application/x-mpegURL";
+        } else if (url.includes(".mpd")) {
+            type = "application/dash+xml";
         } else {
-            document.getElementById('player').innerHTML = "<div style='color:white; text-align:center; padding-top:20%; font-family:sans-serif;'>Error: Stream ID is missing!</div>";
+            alert("Yeh link na toh M3U8 hai na hi MPD!");
+            return;
         }
-    </script>
+
+        // Custom Headers / User-Agent configuration
+        // Note: Browser security (CORS) ke chalte, direct custom User-Agent set krna browser block kr sakta hai.
+        // Agar stream block ho, toh aapko server proxy ya CORS extension lagana hoga.
+        player.src({
+            src: url,
+            type: type,
+            withCredentials: true // Cookie pass karne ke liye
+        });
+
+        // Player ko fir se bhejenge play karne ke liye
+        player.ready(function() {
+            player.play().catch(function(error) {
+                console.log("Auto-play was prevented or stream failed: ", error);
+            });
+        });
+    }
+
+    // Default load karne ke liye aap yahan apna hotstar link paste karke rakh sakte hain
+    document.getElementById('stream-url').value = "Aapka_M3U8_Ya_MPD_Link_Yahan";
+    loadStream();
+</script>
 
 </body>
 </html>
